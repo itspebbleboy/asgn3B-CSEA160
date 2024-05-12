@@ -125,7 +125,9 @@ function main() {
       
     // init render call
     initGeometry();
+    camera.update();
     renderScene();
+    camera.rot[0] = 0;
     requestAnimationFrame(tick);// req that the browser calls tick
     let duration = performance.now() - startTime;
     //sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "fps");
@@ -155,10 +157,10 @@ function main() {
         camera.eye.elements[2] += 0.5;
         break;
       case 81: //Q
-        g_angle += 5;
+        camera.rot[0] = 5;
         break;
-      case 69: //Q
-        g_angle -= 5;
+      case 69: //E
+        camera.rot[0] -= 5;
         break;
       default:
         console.log("invalid key");
