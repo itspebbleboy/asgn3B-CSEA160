@@ -61,6 +61,10 @@ let u_WhichTexture = 0;
 let g_rotateMatrix;
 let g_angle = 0;
 let g_time;
+
+let camera_rotateY = 0;
+let camera_rotateX = 0;
+let mouseymove = false;
 // Camera
 var camera = new Camera();
 
@@ -81,6 +85,29 @@ function main() {
   }
   actionsForHTMLUI();
   document.onkeydown = keydown;
+  document.onkeyup = keyup;
+  canvas.addEventListener("click", async (event) => {
+    if (!mouseymove){
+      await canvas.requestPointerLock({
+        unadjustedMovement: true,
+      });
+    }
+  });
+  
+  document.addEventListener("pointerlockchange", (ev) => {
+    mouseymove = !mouseymove;
+  });
+
+  document.addEventListener("mousemove", (ev) => {
+    if(!mouseymove) return;
+    var x = ev.clientX
+    var y = ev.clientY;
+    camera_rotateX = ev.movementX;
+    camera_rotateY -= ev.movementY;
+    console.log("mouseymove");
+  });
+
+
   initTextures();
   gl.clearColor(75/255, 97/255, 84/255, 1.0);
 
@@ -98,7 +125,7 @@ function main() {
     gl.uniformMatrix4fv(u_ProjectionMatrix,false,projMat.elements);
 
     // making the view matrix 
-    var viewMat = new Matrix4()
+    var viewMat = new Matrix4();
     viewMat.setLookAt(camera.eye.elements[0],camera.eye.elements[1], camera.eye.elements[2], 
         camera.at.elements[0], camera.at.elements[1], camera.at.elements[2], 
             camera.up.elements[0],camera.up.elements[1],camera.up.elements[2]);
@@ -125,14 +152,19 @@ function main() {
       
     // init render call
     initGeometry();
+    camera.rot[0] = camera_rotateX;
+    camera.rot[1] = camera_rotateY;
     camera.update();
+    camera_rotateX = 0;
+    camera_rotateY = 0;
+
     renderScene();
-    camera.rot[0] = 0;
     requestAnimationFrame(tick);// req that the browser calls tick
     let duration = performance.now() - startTime;
     //sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "fps");
   };
 
+  //requestAnimationFrame(tick);
   requestAnimationFrame(tick);
 
 
@@ -142,22 +174,22 @@ function main() {
   }
   
   function keydown(ev){
-    switch(ev.keyCode){
-      case 68: //D
-        camera.eye.elements[0] += 0.5;
+    switch(ev.keyCode){ //PRESS DOWN
+      case 68: //D 
+        camera.move[0] = 1;
         break;
       case 65: //A
-        camera.eye.elements[0] -= 0.5;
+        camera.move[0] = -1;
         break;
       case 87: //W
-        camera.eye.elements[2] -= 0.5;
+        camera.move[2] = 1;
         console.log("W");
         break;
       case 83: //S
-        camera.eye.elements[2] += 0.5;
+        camera.move[2] = -1;
         break;
       case 81: //Q
-        camera.rot[0] = 5;
+        camera.rot[0] += 5;
         break;
       case 69: //E
         camera.rot[0] -= 5;
@@ -166,26 +198,41 @@ function main() {
         console.log("invalid key");
         break; 
     }
-    /*
-    if(ev.keyCode==68){ // D
-        camera.eye[0] += 0.5;
-    }else if(ev.keyCode ==65){ // A
-        camera.eye[0] -= 0.5;
-    }else if(ev.keyCode == 87){ // W
-        camera.eye[2] -= 0.5;
-    }else if(ev.keyCode == 83){ //S
-        camera.eye[2] += 0.5;
-    }else{
-        console.log("invalid key");
-    }*/
+    console.log("rot[0]: "+ camera.rot[0]);
+    camera.update();
     renderScene();
+    camera.rot[0] = 0;
   }
+  function keyup(ev){
+    switch(ev.keyCode){ // RELEASE
+      case 68: //D
+        camera.move[0] = 0;
+        break;
+      case 65: //A
+        camera.move[0] = 0;
+        break;
+      case 87: //W
+        camera.move[2] = 0;
+        console.log("W");
+        break;
+      case 83: //S
+        camera.move[2] = 0;
+        break;
+      default:
+        break; 
+    }
+
+    console.log("rot[0]: "+ camera.rot[0]);
+    camera.update();
+    renderScene();
+    camera.rot[0] = 0;
+  }
+
   //tick();
 }
 function clearCanvas() {
     renderScene(); // Re-render the canvas, which should now be clear
 }
-
 
 
 function loadTexture(image, num) {
