@@ -55,15 +55,19 @@ let u_Samplers = [];
 
 let num_texts = 2;
 let gl_TEXTURES;
-let textures = ["./resources/blueflower.jpg"];
+let textures = ["./resources/blueflower.jpg", './resources/floor.jpg'];
 let u_WhichTexture = 0;
 
 let g_rotateMatrix;
 let g_angle = 0;
-let g_time;
+let g_time = Date.now(); // Initialize g_time outside the tick function for persistence
+
+let map_offset_X= 5;
+let map_offset_Z=-30;
 
 let camera_rotateY = 0;
 let camera_rotateX = 0;
+let key_state=0;
 let mouseymove = false;
 // Camera
 var camera = new Camera();
@@ -75,6 +79,49 @@ REQUIREMENTS FOR ASGN 3A
     0.5 pts Texture on some objects and color on some other objects. All working together.
     1 pts   Multiple textures
 */
+// 0,0,0,0,0,0,0,0,
+// 1,1,1,1,1,1,1,1,
+let map =      [[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
+];
+
+let blocks = [];
+
+function drawMap(map, texture, level){
+  for(x=0;x<32;x++){
+    for(y=0;y<map.length;y++){
+        if(map[y][x] == 1){
+          var b = new Cube();
+          b.textureNum = texture;
+          b.matrix.translate(x+map_offset_X,level,y+map_offset_Z);
+          b.color = [50/255,50/255,50/255,1];
+          blocks.push(b);
+        }
+    }
+  }
+}
 
 function main() {
   if (!setupWebGL()) {
@@ -86,7 +133,7 @@ function main() {
   actionsForHTMLUI();
   document.onkeydown = keydown;
   document.onkeyup = keyup;
-  canvas.addEventListener("click", async (event) => {
+  canvas.addEventListener("click", async (ev) => {
     if (!mouseymove){
       await canvas.requestPointerLock({
         unadjustedMovement: true,
@@ -96,23 +143,20 @@ function main() {
   
   document.addEventListener("pointerlockchange", (ev) => {
     mouseymove = !mouseymove;
+    console.log("pointerlockchange called, mouseymove = " + mouseymove);
   });
 
   document.addEventListener("mousemove", (ev) => {
-    if(!mouseymove) return;
-    var x = ev.clientX
-    var y = ev.clientY;
-    camera_rotateX = ev.movementX;
-    camera_rotateY -= ev.movementY;
-    console.log("mouseymove");
-  });
-
+    if(!mouseymove) return;  
+    camera_rotateY += ev.movementX; // controls yaw
+    camera_rotateX -= ev.movementY; // controls pitch  
+  });  
 
   initTextures();
   gl.clearColor(75/255, 97/255, 84/255, 1.0);
-
+  drawMap(map, 0, 0);
   function initGeometry(){
-    cube = new Cube(); 
+    cube = new Cube();
   }
 
   function renderScene() {
@@ -125,22 +169,36 @@ function main() {
     gl.uniformMatrix4fv(u_ProjectionMatrix,false,projMat.elements);
 
     // making the view matrix 
-    var viewMat = new Matrix4();
+    var viewMat = new Matrix4(0,0,0, 1,1,1, 0,1,0);
     viewMat.setLookAt(camera.eye.elements[0],camera.eye.elements[1], camera.eye.elements[2], 
         camera.at.elements[0], camera.at.elements[1], camera.at.elements[2], 
             camera.up.elements[0],camera.up.elements[1],camera.up.elements[2]);
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
 
     // rotate matrix
-    g_rotateMatrix = new Matrix4().rotate(g_angle,0,1,0);
+    g_rotateMatrix = new Matrix4();
     gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, g_rotateMatrix.elements);
     
-
-
+    let cube = new Cube();
     cube.color = [50/255,50/255,50/255,1];
-    cube.matrix.translate(-0.5,-0.2,0);
+    cube.matrix.translate(5,0,-10);
     cube.render();
+
+    let sky = new Cube();
+    sky.textureNum = 0;
+    sky.matrix.scale(200,200,200);
     
+    sky.render();
+
+    let floor = new Cube();
+    floor.textureNum = 1; 
+    floor.matrix.translate(0,-0.7 ,0);
+    floor.matrix.scale(200,1,200);
+    floor.render();
+
+    blocks.forEach(b => {
+      b.render();
+    });
   }
 
   var tick = function(){
@@ -151,17 +209,16 @@ function main() {
     g_time = now;
       
     // init render call
-    initGeometry();
     camera.rot[0] = camera_rotateX;
     camera.rot[1] = camera_rotateY;
-    camera.update();
+    camera.update(elapsed);
     camera_rotateX = 0;
     camera_rotateY = 0;
 
     renderScene();
     requestAnimationFrame(tick);// req that the browser calls tick
     let duration = performance.now() - startTime;
-    //sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "fps");
+    sendTextToHTML(" ms: " + Math.floor(duration) + " fps: " + Math.floor(10000/duration), "fps");
   };
 
   //requestAnimationFrame(tick);
@@ -177,9 +234,11 @@ function main() {
     switch(ev.keyCode){ //PRESS DOWN
       case 68: //D 
         camera.move[0] = 1;
+        console.log("D");
         break;
       case 65: //A
         camera.move[0] = -1;
+        console.log("A");
         break;
       case 87: //W
         camera.move[2] = 1;
@@ -187,21 +246,30 @@ function main() {
         break;
       case 83: //S
         camera.move[2] = -1;
+        console.log("S"); 
         break;
       case 81: //Q
-        camera.rot[0] += 5;
+        camera_rotateY = -10;
         break;
       case 69: //E
-        camera.rot[0] -= 5;
+        camera_rotateY =10;
+        //camera_rotateX = key_state;
+        break;
+      case 186: //;
+        addBlock();
+        break;
+      case 222: //'
+        deleteBlock();
         break;
       default:
         console.log("invalid key");
         break; 
     }
+    /*
     console.log("rot[0]: "+ camera.rot[0]);
     camera.update();
     renderScene();
-    camera.rot[0] = 0;
+    camera.rot[0] = 0;*/
   }
   function keyup(ev){
     switch(ev.keyCode){ // RELEASE
@@ -213,7 +281,6 @@ function main() {
         break;
       case 87: //W
         camera.move[2] = 0;
-        console.log("W");
         break;
       case 83: //S
         camera.move[2] = 0;
@@ -221,17 +288,92 @@ function main() {
       default:
         break; 
     }
-
+    /*
     console.log("rot[0]: "+ camera.rot[0]);
     camera.update();
     renderScene();
-    camera.rot[0] = 0;
+    camera.rot[0] = 0;*/
   }
 
   //tick();
+  
+  function addBlock() {
+    let direction = camera.forward().norm(); // Ensure the direction vector is normalized
+    let stepSize = 0.5; // Smaller step sizes result in more accurate raycasting
+    let maxDistance = 5;
+    let map_offset_X = 5; // Adjust based on how your map and drawing coordinates are aligned
+    let map_offset_Z = 30; // Adjust based on how your map and drawing coordinates are aligned
+
+    // Iterate from farthest point back towards the camera
+    for (let t = maxDistance; t >= 0; t -= stepSize) {
+        let checkX = Math.floor(camera.at.elements[0] + direction.elements[0] * t - map_offset_X);
+        let checkY = Math.floor(camera.at.elements[1] + direction.elements[1] * t);
+        let checkZ = Math.floor(camera.at.elements[2] + direction.elements[2] * t + map_offset_Z);
+
+        console.log(" Check: {" + checkX+", "+checkZ +"}");
+
+        // Ensure we're within map bounds
+        if (checkZ >= 0 && checkZ < map.length && checkX >= 0 && checkX < map[0].length) {
+          console.log("checking block @: " + checkX +", "+checkZ +" value: " + map[checkZ][checkX] );
+            if (map[checkZ][checkX] === 0) {  // Assuming '0' is an empty space where a block can be added
+                map[checkZ][checkX] = 1; // Add a block
+                updateScene(); // Redraw the scene
+                console.log("Block added at:", checkX, checkZ);
+                return; // Exit the function after adding the block
+            }
+        }
+    }
+
+    console.log("No suitable space found to add a block.");
+  }
+
+  function deleteBlock() {
+    let direction = camera.forward().norm(); // Ensure the direction vector is normalized
+    let stepSize = 0.1; // Smaller step sizes result in more accurate raycasting
+    let maxDistance = 5;
+
+    for (let t = 0; t <= maxDistance; t += stepSize) {
+        //let checkX = Math.floor(camera.at.elements[0] + direction.elements[0] * t - map_offset_X);
+        //let checkY = Math.floor(camera.at.elements[1] + direction.elements[1] * t);
+        //let checkZ = Math.floor(camera.at.elements[2] + direction.elements[2] * t - map_offset_Z);
+
+        let checkX = Math.floor(camera.at.elements[0] + direction.elements[0] * t - map_offset_X);
+        let checkY = Math.floor(camera.at.elements[1] + direction.elements[1] * t);
+        let checkZ = Math.floor(camera.at.elements[2] + direction.elements[2] * t - map_offset_Z);
+        // Ensure we're within map bounds
+        if (checkZ >= 0 && checkZ < map.length && checkX >= 0 && checkX < map[0].length) {
+            if (map[checkZ][checkX] === 1) {  // Assuming '1' is a solid block
+                map[checkZ][checkX] = 0; // Remove the first block found
+                updateScene(); // Redraw the scene
+                console.log("Block removed at:", checkX, checkZ);
+                return; // Exit the function after removing the block
+            }
+        }
+    }
+
+    console.log("No block found within range to delete.");
+  }
+
+
+
+  function updateScene() {
+    blocks = []; // Clear existing blocks
+    drawMap(map, 0, 0);
+    renderScene(); // Render the whole scene
+  }
+
 }
+
+
 function clearCanvas() {
     renderScene(); // Re-render the canvas, which should now be clear
+}
+function getTargetBlock() {
+  let direction = camera.forward();
+  let targetX = Math.floor(camera.eye.elements[0] + direction.elements[0] * 5);
+  let targetY = Math.floor(camera.eye.elements[1] + direction.elements[1] * 5);
+  let targetZ = Math.floor(camera.eye.elements[2] + direction.elements[2] * 5);
+  return {x: targetX, y: targetY, z: targetZ};
 }
 
 
@@ -268,7 +410,7 @@ function setupWebGL() {
     console.log('Failed to get the rendering context for WebGL');
     return false;
   }
-  gl_TEXTURES = [gl.TEXTURE0];
+  gl_TEXTURES = [gl.TEXTURE0, gl.TEXTURE1];
   return true;
 }
 
